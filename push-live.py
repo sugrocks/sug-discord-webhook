@@ -74,6 +74,7 @@ def push_thread(thread, edition=''):
             response = urllib.request.urlopen(req)
         except:
             try:
+                print('\nPOSTing to Discord failed, will retry...')
                 sleep(3)
                 response = urllib.request.urlopen(req)
             except:
@@ -110,7 +111,7 @@ def push_post(post, edition=''):
         'username': '/' + post._thread._board.name + '/',
         'embeds': [
             {
-                'title': post.name + ' - No.' + str(post.post_id) + ' (' + edition + ')',
+                'title': '%s - No.%d (%s)' % (post.name, post.post_id, edition),
                 'description': post.text_comment,
                 'color': 3518996,
                 'url': post.url,
@@ -134,6 +135,7 @@ def push_post(post, edition=''):
             response = urllib.request.urlopen(req)
         except:
             try:
+                print('\nPOSTing to Discord failed, will retry...')
                 sleep(3)
                 response = urllib.request.urlopen(req)
             except:
@@ -201,4 +203,4 @@ if __name__ == '__main__':
         check_sug()
         check_threads()
         relconf += 1
-        sleep(5)
+        sleep(10)
