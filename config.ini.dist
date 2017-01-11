@@ -9,5 +9,11 @@
 [co]
 ; id = token
 
+[coimg]
+; id = token
+
 [trash]
+; id = token
+
+[trashimg]
 ; id = token
