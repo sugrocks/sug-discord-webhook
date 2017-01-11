@@ -1,0 +1,13 @@
+; How to get the id and token?
+;   Create a webhook for the (or each) channel and copy the url.
+;   Your url will be like "https://discordapp.com/api/webhooks/{webhook.id}/{webhook.token}".
+;   The numbers after "webhooks/" are the id, the content after the slash is the token.
+
+[new]
+; id = token
+
+[co]
+; id = token
+
+[trash]
+; id = token
