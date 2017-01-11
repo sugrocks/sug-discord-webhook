@@ -69,10 +69,19 @@ def push_thread(thread, edition=''):
     for hook in dict(config.items('new')):
         url = "https://discordapp.com/api/webhooks/%s/%s" % (hook, config.get('new', hook))
         req = urllib.request.Request(url, data=params, headers=headers)
-        response = urllib.request.urlopen(req)
+
+        try:
+            response = urllib.request.urlopen(req)
+        except:
+            try:
+                sleep(3)
+                response = urllib.request.urlopen(req)
+            except:
+                continue
+
         rep = response.read().decode('utf8')
         if rep != '':
-            print(rep)
+            print('\n' + rep)
 
 
 def push_post(post, edition=''):
@@ -86,27 +95,22 @@ def push_post(post, edition=''):
         image = {
             'url': post.file.file_url
         }
-
-    if post.has_file and post.file.file_extension == 'webm':
+    elif post.has_file and post.file.file_extension == 'webm':
         footer = {
-            'text': '(A webm is attached) - Thread: ' + edition,
+            'text': '(A webm is attached)',
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
     elif post.spoiler:
         footer = {
-            'text': '(Image is spoiled) - Thread: ' + edition,
+            'text': '(Image is spoiled)',
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
-        }
-    else:
-        footer = {
-            'text': 'Thread: ' + edition
         }
 
     data = {
         'username': '/' + post._thread._board.name + '/',
         'embeds': [
             {
-                'title': post.name + ' - No.' + str(post.post_id),
+                'title': post.name + ' - No.' + str(post.post_id) + ' (' + edition + ')',
                 'description': post.text_comment,
                 'color': 3518996,
                 'url': post.url,
@@ -125,10 +129,19 @@ def push_post(post, edition=''):
     for hook in dict(config.items(post._thread._board.name)):
         url = "https://discordapp.com/api/webhooks/%s/%s" % (hook, config.get(post._thread._board.name, hook))
         req = urllib.request.Request(url, data=params, headers=headers)
-        response = urllib.request.urlopen(req)
+
+        try:
+            response = urllib.request.urlopen(req)
+        except:
+            try:
+                sleep(3)
+                response = urllib.request.urlopen(req)
+            except:
+                continue
+
         rep = response.read().decode('utf8')
         if rep != '':
-            print(rep)
+            print('\n' + rep)
 
 
 def check_config():
@@ -155,7 +168,7 @@ def check_sug():
                     elif item['board'] == 'trash':
                         thread = trash.get_thread(int(item['id']), False, True)
 
-                    print('Added: ' + item['edition'])
+                    print('\nAdded: ' + item['edition'])
                     watching.append({'id': item['id'], 'edition': item['edition'], 'thread': thread})
                     if not firstrun:
                         push_thread(thread, item['edition'])
@@ -170,7 +183,7 @@ def check_threads():
         upcount = w['thread'].update()
         if not hasattr(w['thread'], 'topic'):
             toremove.append(w)
-            print(str(w['id']) + ' will be removed')
+            print('\n' + str(w['id']) + ' will be removed')
         else:
             if upcount > 0:
                 status_print(str(w['id']) + ': ' + str(upcount) + ' new posts')
