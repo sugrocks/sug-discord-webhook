@@ -1,4 +1,7 @@
 # /sug/ stuff to Discord webhooks
+[![PEP8](https://img.shields.io/badge/code%20style-pep8-green.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Gitgud Build Status](https://gitgud.io/sug/sug-discord-webhook/badges/master/build.svg)](https://gitgud.io/sug/sug-discord-webhook/commits/master)
+[![Travis Build Status](https://travis-ci.org/sugrocks/sug-discord-webhook.svg?branch=master)](https://travis-ci.org/sugrocks/sug-discord-webhook)
 
 > https://su-g.pw/discord
 
