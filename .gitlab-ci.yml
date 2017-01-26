@@ -1,8 +1,6 @@
 test:python:
   image: python:latest
   before_script:
-   - curl -O https://bootstrap.pypa.io/get-pip.py
-   - python get-pip.py
    - pip install flake8
   script:
-   - flake8 --max-line-length=140 .
+   - flake8 --ignore=E122,E126,E127,E128,E129 --max-line-length=140 .

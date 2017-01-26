@@ -1,0 +1,7 @@
+[[source]]
+url = "https://pypi.org/"
+verify_ssl = true
+
+[packages]
+basc_py4chan = "*"
+crayons = "*"

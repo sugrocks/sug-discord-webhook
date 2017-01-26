@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import crayons
 import configparser
 import urllib.error
 import urllib.parse
@@ -21,11 +22,6 @@ watching = deque('')
 # init 4chan boards
 co = fch.Board('co', True)
 trash = fch.Board('trash', True)
-
-
-def status_print(text):
-    # display log and don't do a line return
-    sys.stdout.write('\r[{0}] {1}'.format(str(datetime.now()), str(text)))
 
 
 def roll_color(id):
@@ -70,18 +66,19 @@ def post_discord(params, cat, hook):
     except:
         # try one more time
         try:
-            print('\nPOSTing to Discord failed, will retry...')
+            print(crayons.yellow('\nPOSTing to Discord failed, will retry...'))
             sleep(3)
             response = urllib.request.urlopen(req)
         except:
             # give up
+            print(crayons.red('\nPOSTing to Discord failed again...'))
             return
 
     # get content
     rep = response.read().decode('utf8')
     if rep != '':
         # if we have something in return, it's not good
-        print('\n' + rep)
+        print(crayons.red('\n' + rep))
 
 
 def push_thread(thread, edition=''):
@@ -118,10 +115,10 @@ def push_thread(thread, edition=''):
 
     # and now we build the data to POST
     data = {
-        'username': '/' + thread._board.name + '/',
+        'username': 'New Thread',
         'embeds': [
             {
-                'title': 'New thread: ' + edition,
+                'title': '[/' + thread._board.name + '/] ' + edition,
                 'color': roll_color(post.post_id),
                 'url': thread.url,
                 'footer': footer,
@@ -134,8 +131,8 @@ def push_thread(thread, edition=''):
     params = json.dumps(data).encode('utf8')
 
     # and we push to every concerned webhooks
-    for hook in dict(config.items('new')):
-        post_discord(params, 'new', hook)
+    for hook in dict(config.items('newthread')):
+        post_discord(params, 'newthread', hook)
 
     # if this post has an image, push to image-only channels
     if pushimg:
@@ -147,6 +144,9 @@ def push_thread(thread, edition=''):
                     'color': roll_color(post.post_id),
                     'image': {
                         'url': post.file.file_url
+                    },
+                    'footer': {
+                        'text': '[/' + post._thread._board.name + '/] ' + edition
                     }
                 }
             ]
@@ -158,10 +158,6 @@ def push_thread(thread, edition=''):
 
 
 def push_post(post, edition=''):
-    # if no edition found, just return "/sug/" and the thread number
-    if edition == '':
-        edition = '/sug/ no.' + post._thread.topic.post_id
-
     # default
     pushimg = False
     image = {}
@@ -172,26 +168,33 @@ def push_post(post, edition=''):
         image = {
             'url': post.file.file_url
         }
+        footer = {
+            'text': '[/' + post._thread._board.name + '/] ' + edition
+        }
         pushimg = True
     elif post.has_file and post.file.file_extension == 'webm':
         # if it's a webm, add a note about that
         footer = {
-            'text': '(A webm is attached)',
+            'text': '(A webm is attached) - [/' + post._thread._board.name + '/] ' + edition,
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
     elif post.spoiler:
         # if it was spoiled, add a note about that
         footer = {
-            'text': '(Image is spoiled)',
+            'text': '(Image is spoiled) - [/' + post._thread._board.name + '/]' + edition,
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
+        }
+    else:
+        footer = {
+            'text': '[/' + post._thread._board.name + '/] ' + edition
         }
 
     # and now we build the data to POST
     data = {
-        'username': '/' + post._thread._board.name + '/',
+        'username': post.name,
         'embeds': [
             {
-                'title': '%s - No.%d (%s)' % (post.name, post.post_id, edition),
+                'title': 'No.%d' % post.post_id,
                 'description': post.text_comment,
                 'color': roll_color(post.post_id),
                 'url': post.url,
@@ -218,6 +221,9 @@ def push_post(post, edition=''):
                     'color': roll_color(post.post_id),
                     'image': {
                         'url': post.file.file_url
+                    },
+                    'footer': {
+                        'text': '[/' + post._thread._board.name + '/] ' + edition
                     }
                 }
             ]
@@ -261,7 +267,7 @@ def check_sug():
                         thread = trash.get_thread(int(item['id']), False, True)
 
                     # add the thread and some infos to our deque
-                    print('\nAdded: ' + item['edition'])
+                    print(crayons.green('\nAdded: ' + item['edition']))
                     watching.append({'id': item['id'], 'edition': item['edition'], 'thread': thread})
 
                     # if it's not the first run of the script, push to concerned webhooks
@@ -282,12 +288,14 @@ def check_threads():
         if not hasattr(w['thread'], 'topic'):
             # if there isn't any 'topic' attribute, that means the thread is dead
             toremove.append(w)
-            print('\n' + str(w['id']) + ' will be removed')
+            print(crayons.yellow('\n' + str(w['id']) + ' will be removed'))
         else:
             # if there's any new posts
             if upcount > 0:
                 # get them and push to concerned webhooks
-                status_print(str(w['id']) + ': ' + str(upcount) + ' new posts')
+                sys.stdout.write('\r[{0}] {1}'.format(
+                    crayons.blue(str(datetime.now())),
+                    crayons.green(str(w['id']) + ': ' + str(upcount) + ' new posts')))
                 newposts = w['thread'].all_posts[-upcount:]
                 for post in newposts:
                     push_post(post, w['edition'])

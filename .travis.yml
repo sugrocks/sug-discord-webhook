@@ -1,0 +1,7 @@
+language: python
+python:
+    - "3.6"
+install:
+    - pip install flake8
+script:
+    - flake8 --ignore=E122,E126,E127,E128,E129 --max-line-length=140 .
