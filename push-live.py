@@ -94,7 +94,7 @@ def push_thread(thread, edition=''):
     image = {}
     footer = {}
 
-    if post.file.file_extension != 'webm' and not post.spoiler:
+    if post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
         # if there's an image and it's not spoiler, add it
         image = {
             'url': post.file.file_url
@@ -106,7 +106,7 @@ def push_thread(thread, edition=''):
             'text': '(A webm is attached)',
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
-    elif post.spoiler:
+    elif hasattr(post, 'spoiler') and post.spoiler:
         # if it was spoiled, add a note about that
         footer = {
             'text': '(Image is spoiled)',
@@ -163,7 +163,7 @@ def push_post(post, edition=''):
     image = {}
     footer = {}
 
-    if post.has_file and post.file.file_extension != 'webm' and not post.spoiler:
+    if post.has_file and post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
         # if there's an image and it's not spoiler, add it
         image = {
             'url': post.file.file_url
@@ -178,7 +178,7 @@ def push_post(post, edition=''):
             'text': '(A webm is attached) - [/' + post._thread._board.name + '/] ' + edition,
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
-    elif post.spoiler:
+    elif hasattr(post, 'spoiler') and post.spoiler:
         # if it was spoiled, add a note about that
         footer = {
             'text': '(Image is spoiled) - [/' + post._thread._board.name + '/]' + edition,
