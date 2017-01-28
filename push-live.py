@@ -1,11 +1,12 @@
 import os
+import re
 import sys
+import html
 import json
+import random
 import crayons
+import requests
 import configparser
-import urllib.error
-import urllib.parse
-import urllib.request
 from time import sleep
 import basc_py4chan as fch
 from collections import deque
@@ -22,6 +23,13 @@ watching = deque('')
 # init 4chan boards
 co = fch.Board('co', True)
 trash = fch.Board('trash', True)
+
+
+def del_file(filename):
+    try:
+        os.remove(filename)
+    except OSError:
+        pass
 
 
 def roll_color(id):
@@ -48,8 +56,27 @@ def roll_color(id):
         return 16745755  # orange
 
 
-def post_discord(params, cat, hook):
+def markdownify(post):
+    # get html
+    text = post.comment
+    # replace links
+    text = text.replace('href="#', 'href="' + post._thread.url + '/#')
+    text = text.replace('href="/', 'href="https://boards.4chan.org/')
+    # replace spoilers tags by something "working"
+    text.replace('<s>', '[(⚠spoiler)[').replace('</s>', ']]')
+    # replace new lines
+    text = re.sub(r'<br.*?>', '\n', text)
+    # replace links to markdown links
+    text = re.sub(r'<a href=\"(.*)\" class=\"quotelink\">&gt;&gt;([0-9]*)</a>', r'[>>\2](\1) ', text)
+    # remove any other html stuff and return
+    return html.unescape(re.sub(r'<.*?>', '', text))
+
+
+def post_discord(params, cat, hook, upfile=False):
     # post to Discord
+    # init
+    filepath = ''
+
     # set content to json and use a 'normal' UA
     headers = {
         'content-type': 'application/json',
@@ -57,28 +84,37 @@ def post_discord(params, cat, hook):
     }
     # build our webhook url
     url = "https://discordapp.com/api/webhooks/%s/%s" % (hook, config.get(cat, hook))
-    # and build the request
-    req = urllib.request.Request(url, data=params, headers=headers)
 
     try:
         # make the request
-        response = urllib.request.urlopen(req)
+        if upfile:
+            filepath = 'tmp/' + upfile['name']
+            postfile = requests.get(upfile['url'], stream=True)
+            with open(filepath, 'wb') as fd:
+                for chunk in postfile.iter_content(chunk_size=128):
+                    fd.write(chunk)
+            with open(filepath, 'rb') as f:
+                r = requests.post(url, data=params, files={'file': f})
+        else:
+            r = requests.post(url, data=params, headers=headers)
     except:
         # try one more time
         try:
             print(crayons.yellow('\nPOSTing to Discord failed, will retry...'))
             sleep(3)
-            response = urllib.request.urlopen(req)
+            if upfile:
+                with open(filepath, 'rb') as f:
+                    r = requests.post(url, data=params, files={'file': f})
+            else:
+                r = requests.post(url, data=params, headers=headers)
         except:
             # give up
-            print(crayons.red('\nPOSTing to Discord failed again...'))
+            print(crayons.red('POSTing to Discord failed again...\n'))
+            # remove our file
+            del_file(filepath)
             return
 
-    # get content
-    rep = response.read().decode('utf8')
-    if rep != '':
-        # if we have something in return, it's not good
-        print(crayons.red('\n' + rep))
+    del_file(filepath)
 
 
 def push_thread(thread, edition=''):
@@ -115,12 +151,13 @@ def push_thread(thread, edition=''):
 
     # and now we build the data to POST
     data = {
-        'username': 'New Thread',
+        'content': 'New thread on /' + thread._board.name + '/',
         'embeds': [
             {
-                'title': '[/' + thread._board.name + '/] ' + edition,
+                'title': edition,
                 'color': roll_color(post.post_id),
                 'url': thread.url,
+                'timestamp': post.datetime.isoformat(),
                 'footer': footer,
                 'image': image
             }
@@ -136,28 +173,20 @@ def push_thread(thread, edition=''):
 
     # if this post has an image, push to image-only channels
     if pushimg:
+        filepost = {'name': post.file.filename, 'url': post.file.file_url}
         data = {
-            'username': post.name,
-            'content': '[>>%s](%s)' % (post.post_id, post.url),
-            'embeds': [
-                {
-                    'color': roll_color(post.post_id),
-                    'image': {
-                        'url': post.file.file_url
-                    },
-                    'footer': {
-                        'text': '[/' + post._thread._board.name + '/] ' + edition
-                    }
-                }
-            ]
+            'content': '[>>%s](<%s>)' % (post.post_id, post.url)
         }
-        params = json.dumps(data).encode('utf8')
 
         for hook in dict(config.items(thread._board.name + 'img')):
-            post_discord(params, thread._board.name + 'img', hook)
+            post_discord(data, thread._board.name + 'img', hook, filepost)
 
 
 def push_post(post, edition=''):
+    # if no edition found, just return "/sug/" and the thread number
+    if edition == '':
+        edition = '/sug/ no.' + post._thread.topic.post_id
+
     # default
     pushimg = False
     image = {}
@@ -169,37 +198,37 @@ def push_post(post, edition=''):
             'url': post.file.file_url
         }
         footer = {
-            'text': '[/' + post._thread._board.name + '/] ' + edition
+            'text': edition
         }
         pushimg = True
     elif post.has_file and post.file.file_extension == 'webm':
         # if it's a webm, add a note about that
         footer = {
-            'text': '(A webm is attached) - [/' + post._thread._board.name + '/] ' + edition,
+            'text': '(A webm is attached) - ' + edition,
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
     elif hasattr(post, 'spoiler') and post.spoiler:
         # if it was spoiled, add a note about that
         footer = {
-            'text': '(Image is spoiled) - [/' + post._thread._board.name + '/]' + edition,
+            'text': '(Image is spoiled) - ' + edition,
             'icon_url': 'https://s.kdy.ch/4ch-warning.png'
         }
     else:
         footer = {
-            'text': '[/' + post._thread._board.name + '/] ' + edition
+            'text': edition
         }
 
     # and now we build the data to POST
     data = {
-        'username': post.name,
         'embeds': [
             {
                 'title': 'No.%d' % post.post_id,
-                'description': post.text_comment,
+                'description': markdownify(post),
                 'color': roll_color(post.post_id),
+                'timestamp': post.datetime.isoformat(),
                 'url': post.url,
                 'footer': footer,
-                'image': image
+                'thumbnail': image
             }
         ]
     }
@@ -213,25 +242,13 @@ def push_post(post, edition=''):
 
     # if this post has an image, push to image-only channels
     if pushimg:
+        filepost = {'name': post.file.filename, 'url': post.file.file_url}
         data = {
-            'username': post.name,
-            'content': '[>>%s](%s)' % (post.post_id, post.url),
-            'embeds': [
-                {
-                    'color': roll_color(post.post_id),
-                    'image': {
-                        'url': post.file.file_url
-                    },
-                    'footer': {
-                        'text': '[/' + post._thread._board.name + '/] ' + edition
-                    }
-                }
-            ]
+            'content': '[>>%s](<%s>)' % (post.post_id, post.url)
         }
-        params = json.dumps(data).encode('utf8')
 
         for hook in dict(config.items(post._thread._board.name + 'img')):
-            post_discord(params, post._thread._board.name + 'img', hook)
+            post_discord(data, post._thread._board.name + 'img', hook, filepost)
 
 
 def check_config():
@@ -249,9 +266,8 @@ def check_sug():
     global relconf, firstrun
 
     # fetch our json
-    req = urllib.request.Request('https://api.sug.rocks/threads.json')
-    r = urllib.request.urlopen(req).read()
-    cont = json.loads(r.decode('utf-8'))
+    r = requests.get('https://api.sug.rocks/threads.json')
+    cont = r.json()
 
     for item in cont:
         # for every /sug/ thread

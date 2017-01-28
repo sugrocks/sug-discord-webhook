@@ -1,0 +1,21 @@
+{
+    "_meta": {
+        "Pipfile-sha256": "ee959a072696b132a291ef3e1cc7e0b433342123eede6fe2a8ca0c8276191714",
+        "sources": [
+            {
+                "verify_ssl": true,
+                "url": "https://pypi.org/"
+            }
+        ],
+        "requires": {}
+    },
+    "default": {
+        "crayons": "==0.1.2",
+        "basc-py4chan": {
+            "git": "https://github.com/bibanon/basc-py4chan"
+        },
+        "colorama": "==0.3.7",
+        "requests": "==2.13.0"
+    },
+    "develop": {}
+}

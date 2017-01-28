@@ -1,2 +1,3 @@
-basc_py4chan
+git+https://github.com/bibanon/basc-py4chan#egg=basc-py4chan
+requests
 crayons
