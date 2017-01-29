@@ -3,7 +3,6 @@ import re
 import sys
 import html
 import json
-import random
 import crayons
 import requests
 import configparser
@@ -32,8 +31,8 @@ def del_file(filename):
         pass
 
 
-def roll_color(id):
-    last = int(str(id)[-1:])
+def roll_color(postid):
+    last = int(str(postid)[-1:])
     if last == 1:
         return 7999  # navy
     elif last == 2:
@@ -72,7 +71,7 @@ def markdownify(post):
     return html.unescape(re.sub(r'<.*?>', '', text))
 
 
-def post_discord(params, cat, hook, upfile=False):
+def post_discord(params, cat, hook, upfile=None):
     # post to Discord
     # init
     filepath = ''
@@ -113,6 +112,9 @@ def post_discord(params, cat, hook, upfile=False):
             # remove our file
             del_file(filepath)
             return
+
+    if r.status_code != requests.codes.ok:
+        print(crayons.red(r.text))
 
     del_file(filepath)
 
@@ -190,7 +192,6 @@ def push_post(post, edition=''):
     # default
     pushimg = False
     image = {}
-    footer = {}
 
     if post.has_file and post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
         # if there's an image and it's not spoiler, add it
