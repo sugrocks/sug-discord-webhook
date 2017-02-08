@@ -122,7 +122,7 @@ def post_discord(params, cat, hook, upfile=None):
 def push_thread(thread, edition=''):
     # if no edition found, just return "/sug/" and the thread number
     if edition == '':
-        edition = '/sug/ no.' + thread.topic.post_id
+        edition = '/sug/ no.' + str(thread.topic.post_id)
 
     # to make it easier
     post = thread.topic
@@ -187,7 +187,7 @@ def push_thread(thread, edition=''):
 def push_post(post, edition=''):
     # if no edition found, just return "/sug/" and the thread number
     if edition == '':
-        edition = '/sug/ no.' + post._thread.topic.post_id
+        edition = '/sug/ no.' + str(post._thread.topic.post_id)
 
     # default
     pushimg = False
