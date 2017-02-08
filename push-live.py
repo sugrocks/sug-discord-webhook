@@ -260,11 +260,13 @@ def check_cntumblr():
     # get leaks from sug.rocks
     global cntumblr
 
-    feed = feedparser.parse('http://cartoonnetwork.tumblr.com/rss')
-    for item in feed['items']:
-        if item['guid'] not in cntumblr and 'steven universe' in item['category']:
+    r = requests.get('http://cartoonnetwork.tumblr.com/rss')
+    feed = feedparser.parse(r.text)
+
+    for item in feed.entries:
+        if item.id not in cntumblr and any('steven universe' in tag.term for tag in item.tags):
             data = {
-                'username': feed['channel']['title'],
+                'username': feed.feed.title,
                 'avatar_url': 'https://pbs.twimg.com/profile_images/785937635013517312/BDxzqItb_400x400.jpg',
                 'embeds': [
                     {
@@ -275,6 +277,8 @@ def check_cntumblr():
                     }
                 ]
             }
+
+            print(crayons.green('Tumblr: ' + item.title))
 
             params = json.dumps(data).encode('utf8')
 
