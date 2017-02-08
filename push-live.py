@@ -5,19 +5,21 @@ import html
 import json
 import crayons
 import requests
+import feedparser
 import configparser
-from time import sleep
 import basc_py4chan as fch
+
+from time import sleep
 from collections import deque
 from datetime import datetime
 
-# count stuff
-relconf = 0
-firstrun = True
-
-# init config and list of watched threads
+# init config and stuff
 config = configparser.ConfigParser()
+config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini'))
 watching = deque('')
+leaks = deque('', 20)
+cntumblr = deque('', 20)
+firstrun = True
 
 # init 4chan boards
 co = fch.Board('co', True)
@@ -55,15 +57,17 @@ def roll_color(postid):
         return 16745755  # orange
 
 
-def markdownify(post):
-    # get html
-    text = post.comment
+def markdownify(text, post=None):
     # replace links
-    text = text.replace('href="#', 'href="' + post._thread.url + '/#')
+    if post:
+        text = text.replace('href="#', 'href="' + post._thread.url + '/#')
     text = text.replace('href="/', 'href="https://boards.4chan.org/')
     # replace spoilers tags by something "working"
-    text.replace('<s>', '[(⚠spoiler)[').replace('</s>', ']]')
-    # replace new lines
+    text = text.replace('<s>', '[(⚠spoiler)[').replace('</s>', ']]')
+    # replace italics
+    text = text.replace('<i>', '_').replace('</i>', '_').replace('<em>', '_').replace('</em>', '_')
+    # replace blockquote and new lines
+    text = text.replace('</blockquote>', '</blockquote>\n')
     text = re.sub(r'<br.*?>', '\n', text)
     # replace links to markdown links
     text = re.sub(r'<a href=\"(.*)\" class=\"quotelink\">&gt;&gt;([0-9]*)</a>', r'[>>\2](\1) ', text)
@@ -224,7 +228,7 @@ def push_post(post, edition=''):
         'embeds': [
             {
                 'title': 'No.%d' % post.post_id,
-                'description': markdownify(post),
+                'description': markdownify(post.comment, post),
                 'color': roll_color(post.post_id),
                 'timestamp': post.datetime.isoformat(),
                 'url': post.url,
@@ -252,19 +256,79 @@ def push_post(post, edition=''):
             post_discord(data, post._thread._board.name + 'img', hook, filepost)
 
 
-def check_config():
-    # reload config after 60 runs
-    global relconf
+def check_cntumblr():
+    # get leaks from sug.rocks
+    global cntumblr
 
-    if relconf > 60:
-        relconf = 0
-    if relconf == 0:
-        config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini'))
+    feed = feedparser.parse('http://cartoonnetwork.tumblr.com/rss')
+    for item in feed['items']:
+        if item['guid'] not in cntumblr and 'steven universe' in item['category']:
+            data = {
+                'username': feed['channel']['title'],
+                'avatar_url': 'https://pbs.twimg.com/profile_images/785937635013517312/BDxzqItb_400x400.jpg',
+                'embeds': [
+                    {
+                        'title': 'New post on Tumblr',
+                        'description': markdownify(item.description),
+                        'url': item.link,
+                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                    }
+                ]
+            }
+
+            params = json.dumps(data).encode('utf8')
+
+            # and we push to every concerned webhooks
+            if not firstrun:
+                for hook in dict(config.items('news')):
+                    post_discord(params, 'news', hook)
+
+            cntumblr.append(item.id)
+
+
+def check_leaks():
+    # get leaks from sug.rocks
+    global leaks, firstrun
+
+    r = requests.get('https://api.sug.rocks/leaks.json')
+    cont = r.json()
+
+    for item in cont:
+        # for every leaks
+        if item['id'] not in leaks:
+            if len(item['images']) > 0:
+                image = {
+                    'url': item['images'][0]['url'],
+                }
+            else:
+                image = {}
+
+            data = {
+                'content': 'The leakbot found something! Get everything on the [leaks page](https://sug.rocks/leaks.html).',
+                'embeds': [
+                    {
+                        'title': item['title'],
+                        'description': markdownify(item['desc']),
+                        'url': 'https://sug.rocks/leaks.html',
+                        'timestamp': datetime.fromtimestamp(item['date']).isoformat(),
+                        'image': image
+                    }
+                ]
+            }
+
+            params = json.dumps(data).encode('utf8')
+
+            # and we push to every concerned webhooks
+            if not firstrun:
+                for hook in dict(config.items('leaks')):
+                    post_discord(params, 'leaks', hook)
+
+            leaks.append(item['id'])
 
 
 def check_sug():
     # get data from sug.rocks about current /sug/ threads
-    global relconf, firstrun
+    global firstrun
 
     # fetch our json
     r = requests.get('https://api.sug.rocks/threads.json')
@@ -323,9 +387,19 @@ def check_threads():
 
 
 if __name__ == '__main__':
+    relconf = 0
+
     while True:
         # always loop
-        check_config()  # load our config if needed
+        if relconf > 60:
+            # reload our config if needed
+            config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini'))
+            relconf = 0
+
+        if relconf % 5 == 0:
+            check_leaks()
+            check_cntumblr()
+
         check_sug()  # check current /sug/ threads
         check_threads()  # get the threads and new posts
         relconf += 1  # increment that, for reload the config

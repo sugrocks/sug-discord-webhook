@@ -1,3 +1,4 @@
 git+https://github.com/bibanon/basc-py4chan#egg=basc-py4chan
+feedparser
 requests
 crayons
