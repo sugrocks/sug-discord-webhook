@@ -264,10 +264,12 @@ def check_cntumblr():
     feed = feedparser.parse(r.text)
 
     for item in feed.entries:
+        if not hasattr(item, 'tags'):
+            continue
         if item.id not in cntumblr and any('steven universe' in tag.term for tag in item.tags):
             data = {
                 'username': feed.feed.title,
-                'avatar_url': 'https://pbs.twimg.com/profile_images/785937635013517312/BDxzqItb_400x400.jpg',
+                'avatar_url': 'https://sug.rocks/img/CN.jpg',
                 'embeds': [
                     {
                         'title': 'New post on Tumblr',
