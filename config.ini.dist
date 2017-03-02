@@ -1,13 +1,22 @@
+[DEFAULT]
+zap = http://tvlistings.zap2it.com/tvlistings/ZCProgram.do?sId=EP01616432&t=Steven+Universe&method=getEpisodesForShow&desc=on
+
 ; How to get the id and token?
 ;   Create a webhook for the (or each) channel and copy the url.
 ;   Your url will be like "https://discordapp.com/api/webhooks/{id}/{token}".
 ;   The numbers after "webhooks/" are the id, the content after the slash is the token.
 
 [news]
-; soon
+; {id} = {token}
 
 [leaks]
-; soon
+; {id} = {token}
+
+[schedule]
+; {id} = {token}
+
+[zap]
+; {id} = {token}
 
 [newthread]
 ; {id} = {token}
