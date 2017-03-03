@@ -12,15 +12,14 @@ import basc_py4chan as fch
 from time import sleep
 from collections import deque
 from datetime import datetime
-from bs4 import BeautifulSoup
 
 # init config and stuff
 config = configparser.ConfigParser()
 config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini'))
 watching = deque('')
 leaks = deque('', 20)
-schedule = deque('', 20)
-zap = deque('', 20)
+cn_schedule = deque('', 20)
+zap_schedule = deque('', 20)
 cntumblr = deque('', 20)
 firstrun = True
 
@@ -337,14 +336,14 @@ def check_leaks():
 
 def check_schedule():
     # get schedule from sug.rocks
-    global schedule, firstrun
+    global cn_schedule, zap_schedule, firstrun
 
     r = requests.get('https://api.sug.rocks/schedule.json')
     cont = r.json()
 
-    for item in cont:
-        # for every leaks
-        if item['id'] not in schedule:
+    for item in cont['cn']:
+        # for every episode in CN schedule
+        if item['id'] not in cn_schedule:
             print(crayons.green(item['date'] + ' ' + item['time'] + ': ' + item['title']))
             data = {
                 'username': 'Cartoon Network schedule updates',
@@ -352,8 +351,18 @@ def check_schedule():
                 'embeds': [
                     {
                         'title': item['title'],
-                        'description': 'Will air ' + item['date'] + ' at ' + item['time'] + ' EST',
-                        'timestamp': datetime.fromtimestamp(item['timestamp']).isoformat(),
+                        'fields': [
+                            {
+                                'name': 'Air date',
+                                'value': item['date'],
+                                'inline': True
+                            },
+                            {
+                                'name': 'Air time',
+                                'value': item['time'] + ' EST',
+                                'inline': True
+                            }
+                        ]
                     }
                 ]
             }
@@ -365,59 +374,35 @@ def check_schedule():
                 for hook in dict(config.items('schedule')):
                     post_discord(params, 'schedule', hook)
 
-            schedule.append(item['id'])
+            cn_schedule.append(item['id'])
 
+    for item in cont['zap']:
+        if item['id'] not in zap_schedule:  # don't double-post if nothing changes
+            print(crayons.green(item['date'] + ': [' + item['episode'] + '] ' + item['title']))
+            synopsis = '_None_'
+            if item['synopsis'] is not None:
+                synopsis = item['synopsis']
 
-def check_zap():
-    # get schedule from zap2it
-    global zap, firstrun
-
-    r = requests.get(config['DEFAULT']['zap'])
-    soup = BeautifulSoup(r.text, 'html5lib')
-    table = soup.find(id='zc-episode-guide')
-    trs = table.find_all('tr')
-
-    for tr in trs[1:6]:  # 5 elements, excluding table header
-        # Season number
-        s = tr.find(attrs={'itemprop': 'partOfSeason'}).contents[0]
-        # Episode number
-        e = tr.find(attrs={'itemprop': 'episodeNumber'}).contents[0]
-        # Title
-        t = tr.find(attrs={'itemprop': 'name'}).contents[0]
-        # Air date
-        d = tr.find(attrs={'itemprop': 'datePublished'}).contents[0]
-        # Paragraph with synopsis
-        o = tr.find('p').contents
-        if len(o) != 0:  # if there's something inside this <p>, it means we have a synopsis
-            p = o[0]
-        else:  # if not, well we got nothing
-            p = '_None_'
-
-        out = '[S%sE%s] %s (%s) - Airing: %s' % (s, e, t, p, d)
-
-        if out not in zap:  # don't double-post if nothing changes
-            print(crayons.green(out))
             data = {
                 'username': 'Screener (Zap2It) updates',
                 'avatar_url': 'http://tvlistings.zap2it.com/favicon.ico',
                 'embeds': [
                     {
-                        'title': t,
-                        'url': config['DEFAULT']['zap'],
+                        'title': item['title'],
                         'fields': [
                             {
                                 'name': 'Air date',
-                                'value': d,
+                                'value': item['date'],
                                 'inline': True
                             },
                             {
                                 'name': 'Episode Number',
-                                'value': 'S' + s + 'E' + e,
+                                'value': item['episode'],
                                 'inline': True
                             },
                             {
                                 'name': 'Synopsis',
-                                'value': p,
+                                'value': synopsis,
                                 'inline': False
                             }
                         ]
@@ -429,10 +414,10 @@ def check_zap():
 
             # and we push to every concerned webhooks
             if not firstrun:
-                for hook in dict(config.items('zap')):
-                    post_discord(params, 'zap', hook)
+                for hook in dict(config.items('schedule')):
+                    post_discord(params, 'schedule', hook)
 
-            zap.append(out)
+            zap_schedule.append(item['id'])
 
 
 def check_sug():
@@ -507,7 +492,6 @@ if __name__ == '__main__':
         if relconf % 5 == 0:
             check_leaks()
             check_schedule()
-            check_zap()
             check_cntumblr()
 
         check_sug()  # check current /sug/ threads
