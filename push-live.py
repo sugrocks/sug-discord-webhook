@@ -21,6 +21,7 @@ leaks = deque('', 20)
 cn_schedule = deque('', 20)
 zap_schedule = deque('', 20)
 cntumblr = deque('', 20)
+geekiary = deque('', 20)
 firstrun = True
 
 # init 4chan boards
@@ -294,6 +295,40 @@ def check_cntumblr():
             cntumblr.append(item.id)
 
 
+def check_geekiary():
+    # get leaks from sug.rocks
+    global geekiary
+
+    r = requests.get('http://thegeekiary.com/tag/steven-universe/feed')
+    feed = feedparser.parse(r.text)
+
+    for item in feed.entries:
+        if item.id not in geekiary:
+            data = {
+                'username': 'The Geekiary',
+                'avatar_url': 'https://sug.rocks/img/geekiary.png',
+                'embeds': [
+                    {
+                        'title': item.title,
+                        'description': markdownify(item.description.split('\n')[0]),
+                        'url': item.link,
+                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                    }
+                ]
+            }
+
+            print(crayons.green('Geekiary: ' + item.title))
+
+            params = json.dumps(data).encode('utf8')
+
+            # and we push to every concerned webhooks
+            if not firstrun:
+                for hook in dict(config.items('news')):
+                    post_discord(params, 'news', hook)
+
+            geekiary.append(item.id)
+
+
 def check_leaks():
     # get leaks from sug.rocks
     global leaks, firstrun
@@ -493,6 +528,7 @@ if __name__ == '__main__':
             check_leaks()
             check_schedule()
             check_cntumblr()
+            check_geekiary()
 
         check_sug()  # check current /sug/ threads
         check_threads()  # get the threads and new posts
