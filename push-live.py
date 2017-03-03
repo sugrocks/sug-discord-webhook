@@ -120,7 +120,8 @@ def post_discord(params, cat, hook, upfile=None):
             del_file(filepath)
             return
 
-    if r.status_code != requests.codes.ok:
+    if r.status_code != requests.codes.ok and r.status_code != 204:
+        print('\nError with ' + str(params))
         print(crayons.red(r.text))
 
     del_file(filepath)
