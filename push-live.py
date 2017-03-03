@@ -345,9 +345,10 @@ def check_schedule():
     for item in cont:
         # for every leaks
         if item['id'] not in schedule:
-
+            print(crayons.green(item['date'] + ' ' + item['time'] + ': ' + item['title']))
             data = {
-                'content': 'New entry in CN\'s schedule!',
+                'username': 'Cartoon Network schedule updates',
+                'avatar_url': 'https://sug.rocks/img/CN.jpg',
                 'embeds': [
                     {
                         'title': item['title'],
@@ -393,9 +394,9 @@ def check_zap():
             p = '_None_'
 
         out = '[S%sE%s] %s (%s) - Airing: %s' % (s, e, t, p, d)
-        print(crayons.green(out))
 
         if out not in zap:  # don't double-post if nothing changes
+            print(crayons.green(out))
             data = {
                 'username': 'Screener (Zap2It) updates',
                 'avatar_url': 'http://tvlistings.zap2it.com/favicon.ico',
