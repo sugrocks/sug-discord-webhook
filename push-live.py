@@ -24,6 +24,7 @@ cntumblr = deque('', 20)
 geekiary = deque('', 20)
 dhn = deque('', 20)
 firstrun = True
+ignore_until = 0
 
 # init 4chan boards
 co = fch.Board('co', True)
@@ -81,6 +82,7 @@ def markdownify(text, post=None):
 
 def post_discord(params, cat, hook, upfile=None):
     # post to Discord
+    global ignore_until
     # init
     filepath = ''
 
@@ -124,6 +126,15 @@ def post_discord(params, cat, hook, upfile=None):
     if r.status_code != requests.codes.ok and r.status_code != 204:
         print('\nError with ' + str(params))
         print(crayons.red(r.text))
+
+        try:
+            j = r.json()
+            if hasattr(j, 'message'):
+                if j['message'] == 'You are being rate limited.':
+                    # too many posts, we'll wait until it's good + 10 secure seconds
+                    ignore_until = int(datetime.now().timestamp()) + j['retry_after'] + 10
+        except:
+            pass
 
     del_file(filepath)
 
@@ -247,8 +258,10 @@ def push_post(post, edition=''):
     params = json.dumps(data).encode('utf8')
 
     # and we push to every concerned webhooks
-    for hook in dict(config.items(post._thread._board.name)):
-        post_discord(params, post._thread._board.name, hook)
+    # if we're being rate limited, just ignore
+    if ignore_until < int(datetime.now().timestamp()):
+        for hook in dict(config.items(post._thread._board.name)):
+            post_discord(params, post._thread._board.name, hook)
 
     # if this post has an image, push to image-only channels
     if pushimg:
