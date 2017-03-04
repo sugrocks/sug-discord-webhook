@@ -22,6 +22,7 @@ cn_schedule = deque('', 20)
 zap_schedule = deque('', 20)
 cntumblr = deque('', 20)
 geekiary = deque('', 20)
+dhn = deque('', 20)
 firstrun = True
 
 # init 4chan boards
@@ -261,7 +262,7 @@ def push_post(post, edition=''):
 
 
 def check_cntumblr():
-    # get leaks from sug.rocks
+    # get CN tumblr feed about Steven Universe
     global cntumblr
 
     r = requests.get('http://cartoonnetwork.tumblr.com/rss')
@@ -297,7 +298,7 @@ def check_cntumblr():
 
 
 def check_geekiary():
-    # get leaks from sug.rocks
+    # get geekiary feed for Steven Universe
     global geekiary
 
     r = requests.get('http://thegeekiary.com/tag/steven-universe/feed')
@@ -328,6 +329,40 @@ def check_geekiary():
                     post_discord(params, 'news', hook)
 
             geekiary.append(item.id)
+
+
+def check_dhn():
+    # get Derpy Hooves News feed for Steven Universe
+    global dhn
+
+    r = requests.get('http://derpynews.com/category/sun/feed/')
+    feed = feedparser.parse(r.text)
+
+    for item in feed.entries:
+        if item.id not in dhn:
+            data = {
+                'username': 'Derpy Hooves News',
+                'avatar_url': 'https://sug.rocks/img/dhn.png',
+                'embeds': [
+                    {
+                        'title': item.title,
+                        'description': markdownify(item.description),
+                        'url': item.link,
+                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                    }
+                ]
+            }
+
+            print(crayons.green('DHN: ' + item.title))
+
+            params = json.dumps(data).encode('utf8')
+
+            # and we push to every concerned webhooks
+            if not firstrun:
+                for hook in dict(config.items('news')):
+                    post_discord(params, 'news', hook)
+
+            dhn.append(item.id)
 
 
 def check_leaks():
@@ -530,6 +565,7 @@ if __name__ == '__main__':
             check_schedule()
             check_cntumblr()
             check_geekiary()
+            check_dhn()
 
         check_sug()  # check current /sug/ threads
         check_threads()  # get the threads and new posts
