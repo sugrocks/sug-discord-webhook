@@ -21,6 +21,7 @@ leaks = deque('', 20)
 cn_schedule = deque('', 20)
 zap_schedule = deque('', 20)
 cntumblr = deque('', 20)
+cnarchive = deque('', 20)
 geekiary = deque('', 20)
 dhn = deque('', 20)
 firstrun = True
@@ -271,6 +272,7 @@ def push_post(post, edition=''):
         }
 
         for hook in dict(config.items(post._thread._board.name + 'img')):
+            sleep(1)
             post_discord(data, post._thread._board.name + 'img', hook, filepost)
 
 
@@ -287,7 +289,7 @@ def check_cntumblr():
         if item.id not in cntumblr and any('steven universe' in tag.term for tag in item.tags):
             data = {
                 'username': feed.feed.title,
-                'avatar_url': 'https://sug.rocks/img/CN.jpg',
+                'avatar_url': 'https://sug.rocks/img/feeds/CN.jpg',
                 'embeds': [
                     {
                         'title': 'New post on Tumblr',
@@ -310,6 +312,42 @@ def check_cntumblr():
             cntumblr.append(item.id)
 
 
+def check_cnarchive():
+    # get CN Archive tumblr feed about Steven Universe
+    global cnarchive
+
+    r = requests.get('http://cnschedulearchive.tumblr.com/rss')
+    feed = feedparser.parse(r.text)
+
+    for item in feed.entries:
+        if not hasattr(item, 'tags'):
+            continue
+        if item.id not in cnarchive and any('Cartoon Network' in tag.term for tag in item.tags):
+            data = {
+                'username': feed.feed.title,
+                'avatar_url': 'https://sug.rocks/img/feeds/CNArchive.png',
+                'embeds': [
+                    {
+                        'title': 'Schedule published',
+                        'description': markdownify(item.description),
+                        'url': item.link,
+                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                    }
+                ]
+            }
+
+            print(crayons.green('Tumblr Archive: ' + item.title))
+
+            params = json.dumps(data).encode('utf8')
+
+            # and we push to every concerned webhooks
+            if not firstrun:
+                for hook in dict(config.items('news')):
+                    post_discord(params, 'news', hook)
+
+            cnarchive.append(item.id)
+
+
 def check_geekiary():
     # get geekiary feed for Steven Universe
     global geekiary
@@ -321,7 +359,7 @@ def check_geekiary():
         if item.id not in geekiary:
             data = {
                 'username': 'The Geekiary',
-                'avatar_url': 'https://sug.rocks/img/geekiary.png',
+                'avatar_url': 'https://sug.rocks/img/feeds/geekiary.png',
                 'embeds': [
                     {
                         'title': item.title,
@@ -355,7 +393,7 @@ def check_dhn():
         if item.id not in dhn:
             data = {
                 'username': 'Derpy Hooves News',
-                'avatar_url': 'https://sug.rocks/img/dhn.png',
+                'avatar_url': 'https://sug.rocks/img/feeds/dhn.png',
                 'embeds': [
                     {
                         'title': item.title,
@@ -431,7 +469,7 @@ def check_schedule():
             print(crayons.green(item['date'] + ' ' + item['time'] + ': ' + item['title']))
             data = {
                 'username': 'Cartoon Network schedule updates',
-                'avatar_url': 'https://sug.rocks/img/CN.jpg',
+                'avatar_url': 'https://sug.rocks/img/feeds/CN.jpg',
                 'embeds': [
                     {
                         'title': item['title'],
@@ -577,6 +615,7 @@ if __name__ == '__main__':
             check_leaks()
             check_schedule()
             check_cntumblr()
+            check_cnarchive()
             check_geekiary()
             check_dhn()
 
