@@ -81,6 +81,16 @@ def markdownify(text, post=None):
     return html.unescape(re.sub(r'<.*?>', '', text))
 
 
+def find_first_image(description_html, default_img=None):
+    img_regex = r"<img\b[^>]+?src\s*=\s*['\"]?([^\s'\"?#>]+)"
+    img_matches = re.search(img_regex, description_html)
+
+    if img_matches is not None:
+        return img_matches.groups()[0]
+
+    return default_img
+
+
 def post_discord(params, cat, hook, upfile=None):
     # post to Discord
     global ignore_until
@@ -329,9 +339,12 @@ def check_cnarchive():
                 'embeds': [
                     {
                         'title': 'Schedule published',
-                        'description': markdownify(item.description),
+                        'description': markdownify(item.title),
                         'url': item.link,
-                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                        'timestamp': datetime(*item.published_parsed[:-3]).isoformat(),
+                        'image': {
+                            'url': find_first_image(item.description, 'https://sug.rocks/img/feeds/CNArchive.png')
+                        }
                     }
                 ]
             }
