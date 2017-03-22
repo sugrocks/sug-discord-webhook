@@ -218,7 +218,7 @@ def push_thread(thread, edition=''):
 def push_post(posts, edition=''):
     # if no edition found, just return "/sug/" and the thread number
     if edition == '':
-        edition = '/sug/ no.' + str(post._thread.topic.post_id)
+        edition = '/sug/' + str(posts[0]._thread.topic.post_id)
 
     # will contain all our embeds
     embeds = []
@@ -276,7 +276,6 @@ def push_post(posts, edition=''):
             for hook in dict(config.items(post._thread._board.name + 'img')):
                 sleep(1)
                 post_discord(data, post._thread._board.name + 'img', hook, filepost)
-
 
     # and now we build the data to POST
     data = {
