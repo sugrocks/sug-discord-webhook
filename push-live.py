@@ -215,54 +215,72 @@ def push_thread(thread, edition=''):
             post_discord(data, thread._board.name + 'img', hook, filepost)
 
 
-def push_post(post, edition=''):
+def push_post(posts, edition=''):
     # if no edition found, just return "/sug/" and the thread number
     if edition == '':
         edition = '/sug/ no.' + str(post._thread.topic.post_id)
 
-    # default
-    pushimg = False
-    image = {}
+    # will contain all our embeds
+    embeds = []
 
-    if post.has_file and post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
-        # if there's an image and it's not spoiler, add it
-        image = {
-            'url': post.file.file_url
+    for post in posts:
+        # default
+        pushimg = False
+        image = {}
+
+        if post.has_file and post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
+            # if there's an image and it's not spoiler, add it
+            image = {
+                'url': post.file.file_url
+            }
+            footer = {
+                'text': edition
+            }
+            pushimg = True
+        elif post.has_file and post.file.file_extension == 'webm':
+            # if it's a webm, add a note about that
+            footer = {
+                'text': '(A webm is attached) - ' + edition,
+                'icon_url': 'https://s.kdy.ch/4ch-warning.png'
+            }
+        elif hasattr(post, 'spoiler') and post.spoiler:
+            # if it was spoiled, add a note about that
+            footer = {
+                'text': '(Image is spoiled) - ' + edition,
+                'icon_url': 'https://s.kdy.ch/4ch-warning.png'
+            }
+        else:
+            footer = {
+                'text': edition
+            }
+
+        embed = {
+            'title': 'No.%d' % post.post_id,
+            'description': markdownify(post.comment, post),
+            'color': roll_color(post.post_id),
+            'timestamp': post.datetime.isoformat(),
+            'url': post.url,
+            'footer': footer,
+            'thumbnail': image
         }
-        footer = {
-            'text': edition
-        }
-        pushimg = True
-    elif post.has_file and post.file.file_extension == 'webm':
-        # if it's a webm, add a note about that
-        footer = {
-            'text': '(A webm is attached) - ' + edition,
-            'icon_url': 'https://s.kdy.ch/4ch-warning.png'
-        }
-    elif hasattr(post, 'spoiler') and post.spoiler:
-        # if it was spoiled, add a note about that
-        footer = {
-            'text': '(Image is spoiled) - ' + edition,
-            'icon_url': 'https://s.kdy.ch/4ch-warning.png'
-        }
-    else:
-        footer = {
-            'text': edition
-        }
+
+        embeds.append(embed)
+
+        # if this post has an image, push to image-only channels
+        if pushimg and ignore_until < int(datetime.now().timestamp()):
+            filepost = {'name': post.file.filename, 'url': post.file.file_url}
+            data = {
+                'content': '[>>%s](%s)' % (post.post_id, post.url)
+            }
+
+            for hook in dict(config.items(post._thread._board.name + 'img')):
+                sleep(1)
+                post_discord(data, post._thread._board.name + 'img', hook, filepost)
+
 
     # and now we build the data to POST
     data = {
-        'embeds': [
-            {
-                'title': 'No.%d' % post.post_id,
-                'description': markdownify(post.comment, post),
-                'color': roll_color(post.post_id),
-                'timestamp': post.datetime.isoformat(),
-                'url': post.url,
-                'footer': footer,
-                'thumbnail': image
-            }
-        ]
+        'embeds': embeds
     }
 
     # we dump that
@@ -273,17 +291,6 @@ def push_post(post, edition=''):
     if ignore_until < int(datetime.now().timestamp()):
         for hook in dict(config.items(post._thread._board.name)):
             post_discord(params, post._thread._board.name, hook)
-
-    # if this post has an image, push to image-only channels
-    if pushimg:
-        filepost = {'name': post.file.filename, 'url': post.file.file_url}
-        data = {
-            'content': '[>>%s](<%s>)' % (post.post_id, post.url)
-        }
-
-        for hook in dict(config.items(post._thread._board.name + 'img')):
-            sleep(1)
-            post_discord(data, post._thread._board.name + 'img', hook, filepost)
 
 
 def check_cntumblr():
@@ -606,8 +613,7 @@ def check_threads():
                 sys.stdout.write('\r[{}] {}: {} new posts'.format(
                     crayons.blue(str(datetime.now())), str(w['id']), str(upcount)))
                 newposts = w['thread'].all_posts[-upcount:]
-                for post in newposts:
-                    push_post(post, w['edition'])
+                push_post(newposts, w['edition'])
 
     # remove dead threads from the main deque
     for r in toremove:
