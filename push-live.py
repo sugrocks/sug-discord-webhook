@@ -8,12 +8,14 @@ import requests
 import feedparser
 import configparser
 import basc_py4chan as fch
+import better_exceptions
 
 from time import sleep
 from collections import deque
 from datetime import datetime
 
 # init config and stuff
+better_exceptions.MAX_LENGTH = None
 config = configparser.ConfigParser()
 config.read(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini'))
 watching = deque('')

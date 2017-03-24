@@ -6,6 +6,7 @@ verify_ssl = true
 feedparser = "*"
 requests = "*"
 crayons = "*"
+better-exceptions = "*"
 
 [packages.basc-py4chan]
 git = "https://github.com/bibanon/basc-py4chan"
