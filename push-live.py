@@ -407,7 +407,7 @@ def check_dhn():
     # get Derpy Hooves News feed for Steven Universe
     global dhn
 
-    r = requests.get('http://derpynews.com/category/sun/feed/')
+    r = requests.get('http://sun.derpynews.com/feed/')
     feed = feedparser.parse(r.text)
 
     for item in feed.entries:
@@ -486,7 +486,11 @@ def check_schedule():
 
     for item in cont['cn']:
         # for every episode in CN schedule
-        if item['id'] not in cn_schedule:
+        # generate a unique hash that won't repost the same schedule
+        # beacause they just changed the order in the block
+        title_words = ' '.join(sorted(item['title'].replace('/', ' ').lower().split()))
+
+        if title_words not in cn_schedule:
             print(crayons.green(item['date'] + ' ' + item['time'] + ': ' + item['title']))
             data = {
                 'username': 'Cartoon Network schedule updates',
@@ -502,7 +506,7 @@ def check_schedule():
                             },
                             {
                                 'name': 'Air time',
-                                'value': item['time'] + ' EST',
+                                'value': item['time'],
                                 'inline': True
                             }
                         ]
@@ -517,7 +521,7 @@ def check_schedule():
                 for hook in dict(config.items('schedule')):
                     post_discord(params, 'schedule', hook)
 
-            cn_schedule.append(item['id'])
+            cn_schedule.append(title_words)
 
     for item in cont['zap']:
         if item['id'] not in zap_schedule:  # don't double-post if nothing changes
