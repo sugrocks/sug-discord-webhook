@@ -29,6 +29,7 @@ geekiary = deque('', 20)
 dhn = deque('', 20)
 firstrun = True
 ignore_until = 0
+proxy_img = 'https://kdy.ch/proxy.php?url='
 
 # init 4chan boards
 co = fch.Board('co', True)
@@ -114,7 +115,7 @@ def post_discord(params, cat, hook, upfile=None):
 
     # set content to json and use a 'normal' UA
     headers = {
-        'content-type': 'application/json',
+        'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; sug/1.0)'
     }
     # build our webhook url
@@ -124,7 +125,7 @@ def post_discord(params, cat, hook, upfile=None):
         # make the request
         if upfile:
             filepath = 'tmp/' + upfile['name']
-            postfile = requests.get(upfile['url'], headers={'referer': 'https://boards.4chan.org/'}, stream=True)
+            postfile = requests.get(upfile['url'], headers={'referer': 'https://boards.4chan.org'}, stream=True)
             with open(filepath, 'wb') as fd:
                 for chunk in postfile.iter_content(chunk_size=128):
                     fd.write(chunk)
@@ -186,7 +187,7 @@ def push_thread(thread, edition=''):
     if post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
         # if there's an image and it's not spoiler, add it
         image = {
-            'url': post.file.file_url
+            'url': proxy_img + post.file.file_url
         }
         pushimg = True
     elif post.file.file_extension == 'webm':
@@ -226,7 +227,7 @@ def push_thread(thread, edition=''):
 
     # if this post has an image, push to image-only channels
     if pushimg:
-        filepost = {'name': post.file.filename, 'url': post.file.file_url}
+        filepost = {'name': post.file.filename, 'url': proxy_img + post.file.file_url}
         data = {
             'content': '[>>%s](<%s>)' % (post.post_id, post.url)
         }
@@ -251,7 +252,7 @@ def push_post(posts, edition=''):
         if post.has_file and post.file.file_extension != 'webm' and not (hasattr(post, 'spoiler') and post.spoiler):
             # if there's an image and it's not spoiler, add it
             image = {
-                'url': post.file.file_url
+                'url': proxy_img + post.file.file_url
             }
             footer = {
                 'text': edition
@@ -288,7 +289,7 @@ def push_post(posts, edition=''):
 
         # if this post has an image, push to image-only channels
         if pushimg and ignore_until < int(datetime.now().timestamp()):
-            filepost = {'name': post.file.filename, 'url': post.file.file_url}
+            filepost = {'name': post.file.filename, 'url': proxy_img + post.file.file_url}
             data = {
                 'content': '[>>%s](%s)' % (post.post_id, post.url)
             }
