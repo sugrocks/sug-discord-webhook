@@ -29,7 +29,7 @@ geekiary = deque('', 20)
 dhn = deque('', 20)
 firstrun = True
 ignore_until = 0
-proxy_img = 'https://kdy.ch/proxy.php?url='
+proxy_img = 'https://proxy.sug.rocks/'
 
 # init 4chan boards
 co = fch.Board('co', True)
