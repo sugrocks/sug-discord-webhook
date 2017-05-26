@@ -572,7 +572,7 @@ def check_schedule():
                     synopsis = item['synopsis']
 
                 data = {
-                    'username': 'Screener (Zap2It) updates',
+                    'username': 'Zap2It updates',
                     'avatar_url': 'http://tvlistings.zap2it.com/favicon.ico',
                     'embeds': [
                         {
