@@ -427,7 +427,8 @@ def check_geekiary():
                 # and we push to every concerned webhooks
                 if not firstrun:
                     for hook in dict(config.items('news')):
-                        post_discord(params, 'news', hook)
+                        # post_discord(params, 'news', hook)
+                        pass
 
                 geekiary.append(item.id)
     except TimeoutException:
@@ -600,10 +601,13 @@ def check_schedule():
 
                 params = json.dumps(data).encode('utf8')
 
-                # and we push to every concerned webhooks
-                if not firstrun:
-                    for hook in dict(config.items('schedule')):
-                        post_discord(params, 'schedule', hook)
+                if item['date'] == '_unknown_':
+                    print(crayons.blue('Ignoring because no date'))
+                else:
+                    # and we push to every concerned webhooks
+                    if not firstrun:
+                        for hook in dict(config.items('schedule')):
+                            post_discord(params, 'schedule', hook)
 
                 zap_schedule.append(item['id'])
     except TimeoutException:
@@ -620,28 +624,41 @@ def check_sug():
         r = requests.get('https://api.sug.rocks/threads.json')
         cont = r.json()
 
-        for item in cont:
-            # for every /sug/ thread
-            if item['board'] != 'sugen' and not item['status']['archived']:
-                # if it's not from /sugen/ and is not archived
-                if not any(x['id'] == item['id'] for x in watching):
-                    # ... and that we don't have it yet
-                    try:
-                        # fetch the thread
-                        if item['board'] == 'co':
-                            thread = co.get_thread(int(item['id']), False, True)
-                        elif item['board'] == 'trash':
-                            thread = trash.get_thread(int(item['id']), False, True)
+        # for every /co/sug/ thread
+        for item in cont['co']:
+            item = cont['co'][i]
+            try:
+                # if not archived and that we don't have it yet
+                if not item['status']['closed'] and not any(x['id'] == item['id'] for x in watching):
+                    thread = co.get_thread(item['id'], False, True)
+                    # add the thread and some infos to our deque
+                    print(crayons.green('\nAdded: ' + item['edition']))
+                    watching.append({'id': item['id'], 'edition': item['edition'], 'thread': thread})
 
-                        # add the thread and some infos to our deque
-                        print(crayons.green('\nAdded: ' + item['edition']))
-                        watching.append({'id': item['id'], 'edition': item['edition'], 'thread': thread})
+                    # if it's not the first run of the script, push to concerned webhooks
+                    if not firstrun:
+                        push_thread(thread, item['edition'])
+            except:
+                print('huho co ' + str(i))
+                pass
 
-                        # if it's not the first run of the script, push to concerned webhooks
-                        if not firstrun:
-                            push_thread(thread, item['edition'])
-                    except:
-                        pass
+        # for every /trash/sug/ thread
+        for i in cont['trash']:
+            item = cont['trash'][i]
+            try:
+                # if not archived and that we don't have it yet
+                if not item['status']['closed'] and not any(x['id'] == item['id'] for x in watching):
+                    thread = trash.get_thread(item['id'], False, True)
+                    # add the thread and some infos to our deque
+                    print(crayons.green('\nAdded: ' + item['edition']))
+                    watching.append({'id': item['id'], 'edition': item['edition'], 'thread': thread})
+
+                    # if it's not the first run of the script, push to concerned webhooks
+                    if not firstrun:
+                        push_thread(thread, item['edition'])
+            except:
+                print('huho trash ' + str(i))
+                pass
 
         # once done, it's not the first run anymore
         firstrun = False
