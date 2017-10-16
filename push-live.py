@@ -255,13 +255,13 @@ def push_post(posts, edition=''):
                 'url': proxy_img + post.file.file_url
             }
             footer = {
-                'text': edition
+                'text': '📷(image) - ' + edition
             }
             pushimg = True
         elif post.has_file and post.file.file_extension == 'webm':
             # if it's a webm, add a note about that
             footer = {
-                'text': '(A webm is attached) - ' + edition,
+                'text': '🎞 (webm) - ' + edition,
                 'icon_url': 'https://s.kdy.ch/4ch-warning.png'
             }
         elif hasattr(post, 'spoiler') and post.spoiler:
