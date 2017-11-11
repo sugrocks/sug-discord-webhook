@@ -625,7 +625,7 @@ def check_sug():
         cont = r.json()
 
         # for every /co/sug/ thread
-        for item in cont['co']:
+        for i in cont['co']:
             item = cont['co'][i]
             try:
                 # if not archived and that we don't have it yet
