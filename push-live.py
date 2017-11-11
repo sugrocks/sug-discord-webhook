@@ -427,7 +427,7 @@ def check_geekiary():
                 # and we push to every concerned webhooks
                 if not firstrun:
                     for hook in dict(config.items('news')):
-                        # post_discord(params, 'news', hook)
+                        post_discord(params, 'news', hook)
                         pass
 
                 geekiary.append(item.id)
