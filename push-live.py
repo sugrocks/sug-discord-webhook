@@ -23,10 +23,11 @@ watching = deque('')
 leaks = deque('', 20)
 cn_schedule = deque('', 20)
 zap_schedule = deque('', 20)
-cntumblr = deque('', 20)
-cnarchive = deque('', 20)
-geekiary = deque('', 20)
-dhn = deque('', 20)
+cntumblr = deque('', 50)
+crewniverse = deque('', 50)
+cnarchive = deque('', 50)
+geekiary = deque('', 50)
+dhn = deque('', 50)
 firstrun = True
 ignore_until = 0
 proxy_img = ''  # 'https://proxy.sug.rocks/'
@@ -339,7 +340,7 @@ def check_cntumblr():
                     ]
                 }
 
-                print(crayons.green('Tumblr: ' + item.title))
+                print(crayons.green('Tumblr CN: ' + item.title))
 
                 params = json.dumps(data).encode('utf8')
 
@@ -349,6 +350,44 @@ def check_cntumblr():
                         post_discord(params, 'news', hook)
 
                 cntumblr.append(item.id)
+    except TimeoutException:
+        pass  # Alarm rang
+
+
+def check_crewniverse():
+    # get crewniverse tumblr feed
+    global crewniverse
+    signal.alarm(20)
+
+    try:
+        r = requests.get('http://feeds.feedburner.com/tumblr/xSqE')
+        feed = feedparser.parse(r.text)
+
+        for item in feed.entries:
+            if item.id not in crewniverse:
+                data = {
+                    'username': 'Steven Crewniverse',
+                    'avatar_url': 'https://sug.rocks/img/feeds/Crewniverse.jpg',
+                    'embeds': [
+                        {
+                            'title': 'New post on Tumblr',
+                            'description': markdownify(item.description),
+                            'url': item.link,
+                            'timestamp': datetime(*item.published_parsed[:-3]).isoformat()
+                        }
+                    ]
+                }
+
+                print(crayons.green('Tumblr Crew: ' + item.title))
+
+                params = json.dumps(data).encode('utf8')
+
+                # and we push to every concerned webhooks
+                if not firstrun:
+                    for hook in dict(config.items('news')):
+                        post_discord(params, 'news', hook)
+
+                crewniverse.append(item.id)
     except TimeoutException:
         pass  # Alarm rang
 
@@ -707,6 +746,7 @@ if __name__ == '__main__':
             # check_leaks()
             # check_schedule()
             check_cntumblr()
+            check_crewniverse()
             check_cnarchive()
             check_geekiary()
             check_dhn()
