@@ -367,7 +367,7 @@ def check_crewniverse():
             if item.id not in crewniverse:
                 data = {
                     'username': 'Steven Crewniverse',
-                    'avatar_url': 'https://sug.rocks/img/feeds/Crewniverse.jpg',
+                    'avatar_url': 'https://sug.rocks/img/feeds/Crewniverse.png',
                     'embeds': [
                         {
                             'title': 'New post on Tumblr',
