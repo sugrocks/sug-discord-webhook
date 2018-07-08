@@ -29,7 +29,7 @@ geekiary = deque('', 20)
 dhn = deque('', 20)
 firstrun = True
 ignore_until = 0
-proxy_img = 'https://proxy.sug.rocks/'
+proxy_img = ''  # 'https://proxy.sug.rocks/'
 
 # init 4chan boards
 co = fch.Board('co', True)
@@ -319,7 +319,7 @@ def check_cntumblr():
     signal.alarm(20)
 
     try:
-        r = requests.get('http://cartoonnetwork.tumblr.com/rss')
+        r = requests.get('http://feeds.feedburner.com/tumblr/peLz')
         feed = feedparser.parse(r.text)
 
         for item in feed.entries:
@@ -359,7 +359,7 @@ def check_cnarchive():
     signal.alarm(20)
 
     try:
-        r = requests.get('http://cnschedulearchive.tumblr.com/rss')
+        r = requests.get('http://feeds.feedburner.com/CNScheduleArchive')
         feed = feedparser.parse(r.text)
 
         for item in feed.entries:
@@ -601,13 +601,10 @@ def check_schedule():
 
                 params = json.dumps(data).encode('utf8')
 
-                if item['date'] == '_unknown_':
-                    print(crayons.blue('Ignoring because no date'))
-                else:
-                    # and we push to every concerned webhooks
-                    if not firstrun:
-                        for hook in dict(config.items('schedule')):
-                            post_discord(params, 'schedule', hook)
+                # and we push to every concerned webhooks
+                if not firstrun:
+                    for hook in dict(config.items('schedule')):
+                        post_discord(params, 'schedule', hook)
 
                 zap_schedule.append(item['id'])
     except TimeoutException:
@@ -707,8 +704,8 @@ if __name__ == '__main__':
             relconf = 0
 
         if relconf % 5 == 0:
-            check_leaks()
-            check_schedule()
+            # check_leaks()
+            # check_schedule()
             check_cntumblr()
             check_cnarchive()
             check_geekiary()
