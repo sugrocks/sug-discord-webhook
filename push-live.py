@@ -427,8 +427,8 @@ def check_cnarchive():
 
                 # and we push to every concerned webhooks
                 if not firstrun:
-                    for hook in dict(config.items('news')):
-                        post_discord(params, 'news', hook)
+                    for hook in dict(config.items('schedule')):
+                        post_discord(params, 'schedule', hook)
 
                 cnarchive.append(item.id)
     except TimeoutException:
