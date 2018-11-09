@@ -1,5 +1,2 @@
-git+https://github.com/sugrocks/py8chan#egg=py8chan
-git+https://github.com/sugrocks/basc-py4chan#egg=basc-py4chan
-feedparser
-requests
-crayons
+-i https://pypi.python.org/simple/
+
