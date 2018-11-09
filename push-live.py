@@ -749,7 +749,7 @@ if __name__ == '__main__':
             check_crewniverse()
             check_cnarchive()
             check_geekiary()
-            check_dhn()
+            # check_dhn()
 
         check_sug()  # check current /sug/ threads
         check_threads()  # get the threads and new posts
