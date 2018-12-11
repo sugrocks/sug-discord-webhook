@@ -1,5 +1,5 @@
 crayons==0.1.2
-requests==2.20.1
+requests==2.21.0
 feedparser==5.2.1
 better_exceptions==0.2.1
 git+https://github.com/bibanon/basc-py4chan#egg=basc-py4chan
