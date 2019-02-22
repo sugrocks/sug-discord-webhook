@@ -1,4 +1,4 @@
-crayons==0.1.2
+crayons==0.2.0
 requests==2.21.0
 feedparser==5.2.1
 better_exceptions==0.2.2
